@@ -27,8 +27,8 @@ fi
 
 # ========================================= SWAP SETTINGS ==============================================
 
-# setup zram swap
-if [ ! -e /etc/default/zramswap ]
+# disable zram swap
+if [ -n "$(systemctl status zramswap.service | grep enabled)" ]
 then
     systemctl stop zramswap.service
     systemctl disable zramswap.service

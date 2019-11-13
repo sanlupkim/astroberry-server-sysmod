@@ -34,7 +34,7 @@ systemctl disable getty@tty1.service
 # ========================================= SWAP SETTINGS ==============================================
 
 # setup zram swap
-if [ -e /etc/default/zramswap ]
+if [ -z "$(systemctl status zramswap.service | grep enabled)" ]
 then
     dphys-swapfile swapoff
     dphys-swapfile uninstall
@@ -138,12 +138,5 @@ systemctl enable smb.service
 systemctl start smb.service
 fi
 
-# install latest wiringpi
-if [[ "$(dpkg -s wiringpi | grep 'Version' | cut -d: -f2 | xargs)" == "2.50" ]]
-then
-    wget -O /tmp/wiringpi-latest.deb https://project-downloads.drogon.net/wiringpi-latest.deb
-    dpkg -i /tmp/wiringpi-latest.deb
-    rm -rf /tmp/wiringpi-latest.deb
-fi
-
 echo -e "${RED}You need to reboot for changes to take effect${NC}"
+

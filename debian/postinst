@@ -1,47 +1,47 @@
 #!/bin/bash
-# postinst script for astroberry-server-wui
+# postinst script for astroberry-server-sysmod
 # Some tweaks come from AstroPi https://github.com/rlancaste/AstroPi3
-# For all of these credits due to Rob Lancaster
-
-RED='\033[0;31m'
-NC='\033[0m'
+# For all of these credits go to Rob Lancaster
 
 # ======================================== USER SETTINGS ===============================================
-# Setup user
-if [ ! "$(cut -d: -f1 /etc/passwd | grep astroberry)" ];
+
+# Setup astroberry user
+if [ -z "$(cut -d: -f1 /etc/passwd | grep astroberry)" ];
 then
     useradd -m -G adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi astroberry
-    echo "${RED}Set password for astroberry user${NC}"
-    echo -e "astroberry\nastroberry" | passwd astroberry
+
+    # Source debconf library.
+    . /usr/share/debconf/confmodule
+    db_get astroberry-server-sysmod/password
+    PASSWORD=$RET
+    echo -e "$PASSWORD\n$PASSWORD" | passwd astroberry
+    echo -e "$PASSWORD\n$PASSWORD" | smbpasswd -s -a astroberry
 fi
 
-# Set autologin to user astroberry
-if [ "$(cut -d: -f1 /etc/passwd | grep astroberry)" ] && [ -z "$(grep '^autologin-user=astroberry' '/etc/lightdm/lightdm.conf')" ];
+# Set GUI autologin for astroberry user
+if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep astroberry)" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ]
 then
-    sed -i "s/^autologin-user=pi/autologin-user=astroberry/g" /etc/lightdm/lightdm.conf
+    sed -i "s/^autologin-user=.*/autologin-user=astroberry/g" /etc/lightdm/lightdm.conf
 fi
 
-# Set authorization for sudo users, including astroberry
+# Set console autologin for astroberry user
+if [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ]
+then
+    sed -i "s/^pi$/astroberry/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+fi
+
+# Set authorization for all sudo users
 if [ ! -e /etc/polkit-1/localauthority.conf.d/70-localauthority.conf ]
 then
     echo -e "[Configuration]\nAdminIdentities=unix-group:sudo" > /etc/polkit-1/localauthority.conf.d/70-localauthority.conf
 fi
-
-# Disable pi autologin to virtual console
-systemctl stop getty@tty1.service
-systemctl disable getty@tty1.service
 
 # ========================================= SWAP SETTINGS ==============================================
 
 # setup zram swap
 if [ -z "$(systemctl status zramswap.service | grep enabled)" ]
 then
-    dphys-swapfile swapoff
-    dphys-swapfile uninstall
-    systemctl stop dphys-swapfile
-    systemctl disable dphys-swapfile
     sed -i "s/#PERCENTAGE/PERCENTAGE/g" /etc/default/zramswap
-    systemctl restart zramswap.service
 fi
 
 # ========================================= BOOT SETTINGS ==============================================
@@ -49,94 +49,88 @@ fi
 # set display to 1920x1080
 # see available modes: https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
 
-if [ -n "$(grep '#hdmi_force_hotplug=1' '/boot/config.txt')" ]
+if [ -z "$(grep '^hdmi_force_hotplug=' /boot/config.txt)" ]
 then
-	sed -i "s/#hdmi_force_hotplug=1/hdmi_force_hotplug=1/g" /boot/config.txt
+    echo "hdmi_force_hotplug=1" >> /boot/config.txt
 fi
 
-if [ -n "$(grep '#hdmi_group=1' '/boot/config.txt')" ]
+if [ -z "$(grep '^hdmi_group=' /boot/config.txt)" ]
 then
-	sed -i "s/#hdmi_group=1/hdmi_group=2/g" /boot/config.txt
+    echo "hdmi_group=2" >> /boot/config.txt
 fi
 
-if [ -n "$(grep '#hdmi_mode=1' '/boot/config.txt')" ]
+if [ -z "$(grep '^hdmi_mode=' /boot/config.txt)" ]
 then
-	sed -i "s/#hdmi_mode=1/hdmi_mode=82/g" /boot/config.txt
+    echo "hdmi_mode=82" >> /boot/config.txt
 fi
 
 # enable I2C
-if [ -n "$(grep '#dtparam=i2c_arm=on' '/boot/config.txt')" ]
+if [ -z "$(grep '^dtparam=i2c_arm=on' /boot/config.txt)" ]
 then
-        sed -i "s/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/g" /boot/config.txt
+    echo "dtparam=i2c_arm=on" >> /boot/config.txt
 fi
 
 # enable SPI
-if [ -n "$(grep '#dtparam=spi=on' '/boot/config.txt')" ]
+if [ -z "$(grep '^dtparam=spi=on' /boot/config.txt)" ]
 then
-        sed -i "s/#dtparam=spi=on/dtparam=spi=on/g" /boot/config.txt
+    echo "dtparam=spi=on" >> /boot/config.txt
 fi
 
 # enable audio
-
-if [ -n "$(grep '#dtparam=audio=on' '/boot/config.txt')" ]
+if [ -z "$(grep '^dtparam=audio=on' /boot/config.txt)" ]
 then
-        sed -i "s/#dtparam=audio=on/dtparam=audio=on/g" /boot/config.txt
+    echo "dtparam=audio=on" >> /boot/config.txt
 fi
 
 # enable uart
-if [ ! -n "$(grep '^enable_uart=1' '/boot/config.txt')" ]
+if [ -z "$(grep '^enable_uart=1' /boot/config.txt)" ]
 then
-        echo "enable_uart=1" >> /boot/config.txt
+    echo "enable_uart=1" >> /boot/config.txt
 fi
-
-if [ -n "$(grep '#enable_uart=1' '/boot/config.txt')" ]
-then
-        sed -i "s/#enable_uart=1/enable_uart=1/g" /boot/config.txt
-fi
-
 
 # set gpu memory
-if [ ! -n "$(grep '^gpu_mem=' '/boot/config.txt')" ]
+if [ -z "$(grep '^gpu_mem=' /boot/config.txt)" ]
 then
-        echo "gpu_mem=128" >> /boot/config.txt
+    echo "gpu_mem=128" >> /boot/config.txt
 fi
-
-if [ -n "$(grep '#gpu_mem=128' '/boot/config.txt')" ]
-then
-        sed -i "s/#gpu_mem=128/gpu_mem=128/g" /boot/config.txt
-fi
-
 
 # ========================================= TWEAKS ======================================================
 
 # set hostname
-echo "astroberry" > /etc/hostname
+if [ -n "$(grep 'raspberrypi' /etc/hostname)" ]
+then
+    echo "astroberry" > /etc/hostname
+fi
+
+if [ -n "$(grep 'raspberrypi' /etc/hosts)" ]
+then
+    sed -i "s/raspberrypi/astroberry/g" /etc/hosts
+fi
 
 # remove pi password change prompt
 rm -rf /run/sshwarn
 
-# configure lxde
+# configure lxde-astroberry
 update-alternatives --install /usr/bin/x-session-manager x-session-manager /usr/bin/startlxde-astroberry 95
 
-# configure file sharing
-if [ "$(cut -d: -f1 /etc/passwd | grep astroberry)" ] && [ -e /etc/samba/smb.conf ] && [ -z "$(grep astroberry /etc/samba/smb.conf)" ]
+# activate custom configuration for samba
+if [ -n "$(cut -d: -f1 /etc/passwd | grep astroberry)" ] && [ -z "$(grep '\[astroberry\]' /etc/samba/smb.conf)" ]
 then
-sudo cat >> /etc/samba/smb.conf <<- EOF
-[Pictures]
-   comment = Astro Images
-   path = /home/astroberry/Pictures
+    cat >> /etc/samba/smb.conf << EOF
+
+[astroberry]
+   comment = Astroberry Home
+   path = /home/astroberry
    browseable = yes
    writeable = yes
    read only = no
-   public = yes
    create mask = 0644
    directory mask = 0755
-   force user = astroberry
+   valid users = astroberry
 EOF
 
-systemctl enable smb.service
-systemctl start smb.service
+    db_get astroberry-server-sysmod/password
+    PASSWORD=$RET
+    echo -e "$PASSWORD\n$PASSWORD" | smbpasswd -s -a astroberry
+    systemctl reload smbd.service
 fi
-
-echo -e "${RED}You need to reboot for changes to take effect${NC}"
-

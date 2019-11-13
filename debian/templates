@@ -1,0 +1,7 @@
+Template: astroberry-system-sysmod/password
+Type: password
+Default:
+Description: Enter astroberry user password
+ Password will be used for remote access via ssh
+ and files sharing. It is NOT the same password
+ as used for accessing your desktop remotely.

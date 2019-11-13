@@ -11,7 +11,8 @@ NC='\033[0m'
 if [ ! "$(cut -d: -f1 /etc/passwd | grep astroberry)" ];
 then
     useradd -m -G adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi astroberry
-    passwd astroberry
+    echo "${RED}Set password for astroberry user${NC}"
+    echo -e "astroberry\nastroberry" | passwd astroberry
 fi
 
 # Set autologin to user astroberry
@@ -116,7 +117,6 @@ rm -rf /run/sshwarn
 
 # configure lxde
 update-alternatives --install /usr/bin/x-session-manager x-session-manager /usr/bin/startlxde-astroberry 95
-# update-alternatives --remove x-session-manager /usr/bin/startlxde-astroberry
 
 # configure file sharing
 if [ "$(cut -d: -f1 /etc/passwd | grep astroberry)" ] && [ -e /etc/samba/smb.conf ] && [ -z "$(grep astroberry /etc/samba/smb.conf)" ]

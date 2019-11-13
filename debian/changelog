@@ -1,0 +1,5 @@
+astroberry-server-sysmod (2.0.0) buster; urgency=medium
+
+  * Initial release.
+
+ -- Radek Kaczorek <rkaczorek@gmail.com>  Wed, 13 Nov 2019 01:52:18 +0100

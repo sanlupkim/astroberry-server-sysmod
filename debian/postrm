@@ -1,0 +1,100 @@
+#!/bin/bash
+# postrm script for astroberry-server-wui
+
+RED='\033[0;31m'
+NC='\033[0m'
+
+# ======================================== USER SETTINGS ===============================================
+
+# Remove autologin to user astroberry
+if [ "$(cut -d: -f1 /etc/passwd | grep pi)" ] && [ -n "$(grep '^autologin-user=astroberry' '/etc/lightdm/lightdm.conf')" ];
+then
+    sed -i "s/^autologin-user=astroberry/autologin-user=pi/g" /etc/lightdm/lightdm.conf
+fi
+
+# Remove authorization for sudo users
+if [ -e /etc/polkit-1/localauthority.conf.d/70-localauthority.conf ]
+then
+    rm -rf /etc/polkit-1/localauthority.conf.d/70-localauthority.conf
+fi
+
+# Restore pi autologin to virtual console
+if [ ! "$(cut -d: -f1 /etc/passwd | grep ^pi$)" ];
+then
+    systemctl enable getty@tty1.service
+    systemctl start getty@tty1.service
+fi
+
+# ========================================= SWAP SETTINGS ==============================================
+
+# setup zram swap
+if [ ! -e /etc/default/zramswap ]
+then
+    systemctl stop zramswap.service
+    systemctl disable zramswap.service
+    dphys-swapfile install
+    systemctl enable dphys-swapfile
+    systemctl start dphys-swapfile
+    dphys-swapfile swapon
+fi
+
+# ========================================= BOOT SETTINGS ==============================================
+
+# reset display to defaults
+
+if [ -n "$(grep '^hdmi_force_hotplug=1' '/boot/config.txt')" ]
+then
+	sed -i "s/^hdmi_force_hotplug=1/#hdmi_force_hotplug=1/g" /boot/config.txt
+fi
+
+if [ -n "$(grep '^hdmi_group=1' '/boot/config.txt')" ]
+then
+	sed -i "s/^hdmi_group=1/#hdmi_group=2/g" /boot/config.txt
+fi
+
+if [ -n "$(grep '^hdmi_mode=1' '/boot/config.txt')" ]
+then
+	sed -i "s/^hdmi_mode=1/#hdmi_mode=82/g" /boot/config.txt
+fi
+
+# disable I2C
+if [ -n "$(grep '^dtparam=i2c_arm=on' '/boot/config.txt')" ]
+then
+        sed -i "s/^dtparam=i2c_arm=on/#dtparam=i2c_arm=on/g" /boot/config.txt
+fi
+
+# disable SPI
+if [ -n "$(grep '^dtparam=spi=on' '/boot/config.txt')" ]
+then
+        sed -i "s/^dtparam=spi=on/#dtparam=spi=on/g" /boot/config.txt
+fi
+
+# disable audio
+
+if [ -n "$(grep '^dtparam=audio=on' '/boot/config.txt')" ]
+then
+        sed -i "s/^dtparam=audio=on/#dtparam=audio=on/g" /boot/config.txt
+fi
+
+# disable uart
+if [ -n "$(grep '^enable_uart=1' '/boot/config.txt')" ]
+then
+    sed -i "s/^enable_uart=1/#enable_uart=1/g" /boot/config.txt
+fi
+
+# set gpu memory
+if [ -n "$(grep '^gpu_mem=128' '/boot/config.txt')" ]
+then
+    sed -i "s/^gpu_mem=128/#gpu_mem=128/g" /boot/config.txt
+fi
+
+# ========================================= TWEAKS ======================================================
+
+# reconfigure lxde
+update-alternatives --remove x-session-manager /usr/bin/startlxde-astroberry
+
+# disable file sharing
+systemctl stop smb.service
+systemctl disable smb.service
+
+echo -e "${RED}You need to reboot for changes to take effect${NC}"

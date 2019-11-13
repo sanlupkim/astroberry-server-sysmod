@@ -1,0 +1,14 @@
+Source: astroberry-server-sysmod
+Section: science
+Priority: extra
+Maintainer: Radek Kaczorek <rkaczorek@gmail.com>
+Build-Depends: debhelper (>= 9), cdbs, cmake (>= 2.4.7)
+Standards-Version: 3.9.1
+Homepage: http://www.astroberry.io/
+
+Package: astroberry-server-sysmod
+Conflicts: modemmanager
+Replaces: modemmanager
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, zram-tools, software-properties-common, synaptic, samba, fam, qt5-qmltooling-plugins, phonon4qt5-backend-gstreamer, phonon-backend-gstreamer, gstreamer1.0-plugins-ugly
+Description: Operating system mods and tweaks for Astroberry Server 

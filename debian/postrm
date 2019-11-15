@@ -1,33 +1,43 @@
-#!/bin/bash
+#!/bin/bash -e
 # postrm script for astroberry-server-wui
 
 # ======================================== USER SETTINGS ===============================================
 
+RED='\033[0;31m'
+NC='\033[0m'
+
 # Remove astroberry user
-# LEAVE IT UNTOUCHED
+# LEAVE THE ACCOUNT UNTOUCHED
 
 # Set GUI autologin for astroberry user
-if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep pi)" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ]
+if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi:')" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/^autologin-user=.*/autologin-user=pi/g" /etc/lightdm/lightdm.conf
 fi
 
 # Restore console autologin for pi user
-if [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ]
+if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi:')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    sed -i "s/^astroberry$/pi/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+    sed -i "s/--autologin astroberry/--autologin pi/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
 fi
 
 # Restore defaults for authorization for pi user only
-if [ -e /etc/polkit-1/localauthority.conf.d/70-localauthority.conf ]
+if [ -e /etc/polkit-1/localauthority.conf.d/70-localauthority.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     rm -rf /etc/polkit-1/localauthority.conf.d/70-localauthority.conf
+fi
+
+# Unlock pi user account
+if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi:')" ] && [ -n "$(passwd -S pi | grep '^pi L')" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    echo -e "${RED}Default pi account has been enabled.${NC}"
+    passwd -u pi
 fi
 
 # ========================================= SWAP SETTINGS ==============================================
 
 # disable zram swap
-if [ -z "$(systemctl status zramswap.service | grep enabled)" ]
+if [ -z "$(systemctl status zramswap.service | grep enabled)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     systemctl stop zramswap.service
     systemctl disable zramswap.service
@@ -39,47 +49,47 @@ fi
 # set display to 1920x1080
 # see available modes: https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
 
-if [ -n "$(grep '^hdmi_force_hotplug=1' /boot/config.txt)" ]
+if [ -n "$(grep '^hdmi_force_hotplug=1' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/hdmi_force_hotplug=1//g" /boot/config.txt
 fi
 
-if [ -n "$(grep '^hdmi_group=2' /boot/config.txt)" ]
+if [ -n "$(grep '^hdmi_group=2' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/hdmi_group=2//g" /boot/config.txt
 fi
 
-if [ -n "$(grep '^hdmi_mode=82' /boot/config.txt)" ]
+if [ -n "$(grep '^hdmi_mode=82' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/hdmi_mode=82//g" /boot/config.txt
 fi
 
 # enable I2C
-if [ -n "$(grep '^dtparam=i2c_arm=on' /boot/config.txt)" ]
+if [ -n "$(grep '^dtparam=i2c_arm=on' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/dtparam=i2c_arm=on//g" /boot/config.txt
 fi
 
 # enable SPI
-if [ -n "$(grep '^dtparam=spi=on' /boot/config.txt)" ]
+if [ -n "$(grep '^dtparam=spi=on' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/dtparam=spi=on//g" /boot/config.txt
 fi
 
 # enable audio
-if [ -n "$(grep '^dtparam=audio=on' /boot/config.txt)" ]
+if [ -n "$(grep '^dtparam=audio=on' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/dtparam=audio=on//g" /boot/config.txt
 fi
 
 # enable uart
-if [ -n "$(grep '^enable_uart=1' /boot/config.txt)" ]
+if [ -n "$(grep '^enable_uart=1' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/enable_uart=1//g" /boot/config.txt
 fi
 
 # set gpu memory
-if [ -n "$(grep '^gpu_mem=128' /boot/config.txt)" ]
+if [ -n "$(grep '^gpu_mem=128' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/gpu_mem=128//g" /boot/config.txt
 fi
@@ -87,30 +97,132 @@ fi
 # ========================================= TWEAKS ======================================================
 
 # set hostname
-if [ -n "$(grep 'astroberry' /etc/hostname)" ]
+if [ -n "$(grep 'astroberry' /etc/hostname)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     echo "raspberrypi" > /etc/hostname
 fi
 
-if [ -n "$(grep 'astroberry' /etc/hosts)" ]
+if [ -n "$(grep 'astroberry' /etc/hosts)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/astroberry/raspberrypi/g" /etc/hosts
 fi
 
-# remove pi password change prompt
-touch /run/sshwarn
+# restore default pi first run wizard
+if [ ! -e /etc/xdg/autostart/piwiz.desktop ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    cat > /etc/xdg/autostart/piwiz.desktop << EOF
+[Desktop Entry]
+Type=Application
+Name=Raspberry Pi First-Run Wizard
+Name[en_GB]=Raspberry Pi First-Run Wizard
+GenericName=Raspberry Pi First-Run Wizard
+GenericName[en_GB]=Raspberry Pi First-Run Wizard
+Comment=Configure Raspberry Pi system on first run
+Comment[en_GB]=Configure Raspberry Pi system on first run
+Icon=rpi
+Exec=sudo piwiz
+NotShowIn=GNOME;XFCE;
+StartupNotify=true
+Categories=Settings;DesktopSettings;GTK;X-LXDE-Settings;
+EOF
+
+fi
+
+# restore pi password change prompt
+if [ ! -e /etc/xdg/autostart/pprompt.desktop ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    cat > /etc/xdg/autostart/pprompt.desktop << EOF
+[Desktop Entry]
+Type=Application
+Name=pprompt
+Comment=Prompt to change default password if ssh enabled
+NoDisplay=true
+Exec=sh /etc/xdg/lxsession/LXDE-pi/sshpwd.sh
+NotShowIn=GNOME;KDE;XFCE;
+EOF
+
+    touch /run/sshwarn
+fi
 
 # configure lxde-astroberry
-update-alternatives --remove x-session-manager /usr/bin/startlxde-astroberry
+if [ -n "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    update-alternatives --remove x-session-manager /usr/bin/startlxde-astroberry
+fi
 
 # disactivate custom configuration for samba
-pdbedit -x astroberry
-systemctl reload smbd.service
-
-# purge all package data
-if [ "$1" = "purge" -a -e /usr/share/debconf/confmodule ]; then
-    # Source debconf library.
-    . /usr/share/debconf/confmodule
-    # Remove my changes to the db
-    db_purge
+if [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    pdbedit -x astroberry
+    systemctl reload smbd.service
 fi
+
+# restore greeter
+if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    sed -i "s/^greeter-session=lightdm-gtk-greeter/greeter-session=pi-greeter/g" /etc/lightdm/lightdm.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    sed -i "s/^background=/#background=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    sed -i "s/^theme-name=/#theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^icon-theme-name=Numix' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    sed -i "s/^icon-theme-name=/#icon-theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    sed -i "s/^default-user-image=/#default-user-image=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+# disable qt5 menu icons
+if [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    sed -i "s/^menus_have_icons=true/menus_have_icons=false/g" /etc/xdg/qt5ct/qt5ct.conf
+fi
+
+# unlock numix-icon-theme
+if [ -e /etc/apt/preferences.d/astroberry-server.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    rm -rf /etc/apt/preferences.d/astroberry-server.conf
+fi
+
+# restore start-here icon
+if [ ! -e /usr/share/icons/Numix/16/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    mv -f /usr/share/icons/Numix/16/places/start-here.svg.bak /usr/share/icons/Numix/16/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/22/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    mv -f /usr/share/icons/Numix/22/places/start-here.svg.bak /usr/share/icons/Numix/22/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/24/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    mv -f /usr/share/icons/Numix/24/places/start-here.svg.bak /usr/share/icons/Numix/24/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/32/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    mv -f /usr/share/icons/Numix/32/places/start-here.svg.bak /usr/share/icons/Numix/32/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/48/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    mv -f /usr/share/icons/Numix/48/places/start-here.svg.bak /usr/share/icons/Numix/48/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/64/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+then
+    mv -f /usr/share/icons/Numix/64/places/start-here.svg.bak /usr/share/icons/Numix/64/places/start-here.svg
+fi
+

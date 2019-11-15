@@ -10,5 +10,5 @@ Package: astroberry-server-sysmod
 Conflicts: modemmanager
 Replaces: modemmanager
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, zram-tools, software-properties-common, synaptic, samba, fam, qt5-qmltooling-plugins, phonon4qt5-backend-gstreamer, phonon-backend-gstreamer, gstreamer1.0-plugins-ugly
+Depends: ${shlibs:Depends}, ${misc:Depends}, astroberry-server-artwork, astroberry-server-wiz, zram-tools, software-properties-common, samba, arc-theme, numix-icon-theme, fam, qt5-qmltooling-plugins, phonon4qt5-backend-gstreamer, phonon-backend-gstreamer, gstreamer1.0-plugins-ugly
 Description: Operating system mods and tweaks for Astroberry Server 

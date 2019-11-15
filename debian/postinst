@@ -1,39 +1,44 @@
-#!/bin/bash
+#!/bin/bash -e
 # postinst script for astroberry-server-sysmod
 # Some tweaks come from AstroPi https://github.com/rlancaste/AstroPi3
 # For all of these credits go to Rob Lancaster
 
 # ======================================== USER SETTINGS ===============================================
 
+RED='\033[0;31m'
+NC='\033[0m'
+
 # Setup astroberry user
-if [ -z "$(cut -d: -f1 /etc/passwd | grep astroberry)" ];
+if [ -z "$(cut -d: -f1 /etc/passwd | grep '^astroberry:')" ]
 then
     useradd -m -G adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi astroberry
-
-    # Source debconf library.
-    . /usr/share/debconf/confmodule
-    db_get astroberry-server-sysmod/password
-    PASSWORD=$RET
-    echo -e "$PASSWORD\n$PASSWORD" | passwd astroberry
-    echo -e "$PASSWORD\n$PASSWORD" | smbpasswd -s -a astroberry
+    echo -e "astroberry\nastroberry" | passwd astroberry
+    echo -e "astroberry\nastroberry" | smbpasswd -s -a astroberry
 fi
 
 # Set GUI autologin for astroberry user
-if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep astroberry)" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ]
+if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry:')" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ]
 then
     sed -i "s/^autologin-user=.*/autologin-user=astroberry/g" /etc/lightdm/lightdm.conf
 fi
 
 # Set console autologin for astroberry user
-if [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ]
+if [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry:')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ]
 then
-    sed -i "s/^pi$/astroberry/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+    sed -i "s/--autologin pi /--autologin astroberry/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
 fi
 
 # Set authorization for all sudo users
 if [ ! -e /etc/polkit-1/localauthority.conf.d/70-localauthority.conf ]
 then
     echo -e "[Configuration]\nAdminIdentities=unix-group:sudo" > /etc/polkit-1/localauthority.conf.d/70-localauthority.conf
+fi
+
+# disable pi account
+if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi:')" ] && [ -n "$(passwd -S pi | grep '^pi P')" ]
+then
+    echo -e "${RED}Default pi account has been disabled.\nYou can reenable it anytime by setting new password\nto pi user account by running:\n\$ sudo passwd pi${NC}"
+    usermod -L pi
 fi
 
 # ========================================= SWAP SETTINGS ==============================================
@@ -97,24 +102,40 @@ fi
 # ========================================= TWEAKS ======================================================
 
 # set hostname
-if [ -n "$(grep 'raspberrypi' /etc/hostname)" ]
+if [ -n "$(grep '^raspberrypi$' /etc/hostname)" ]
 then
     echo "astroberry" > /etc/hostname
 fi
 
-if [ -n "$(grep 'raspberrypi' /etc/hosts)" ]
+if [ -n "$(grep '127.0.1.1' /etc/hosts| tr -d '127.0.1.1'| tr -d [:blank:] | grep '^raspberrypi$')" ]
 then
     sed -i "s/raspberrypi/astroberry/g" /etc/hosts
 fi
 
+# remove default first time run wizard
+if [ -e /etc/xdg/autostart/piwiz.desktop ]
+then
+    rm -rf /etc/xdg/autostart/piwiz.desktop
+fi
+
 # remove pi password change prompt
-rm -rf /run/sshwarn
+if [ -e /etc/xdg/autostart/pprompt.desktop ]
+then
+    rm -rf /etc/xdg/autostart/pprompt.desktop
+fi
+if [ -e /run/sshwarn ]
+then
+    rm -rf /run/sshwarn
+fi
 
 # configure lxde-astroberry
-update-alternatives --install /usr/bin/x-session-manager x-session-manager /usr/bin/startlxde-astroberry 95
+if [ -z "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ]
+then
+    update-alternatives --install /usr/bin/x-session-manager x-session-manager /usr/bin/startlxde-astroberry 95
+fi
 
 # activate custom configuration for samba
-if [ -n "$(cut -d: -f1 /etc/passwd | grep astroberry)" ] && [ -z "$(grep '\[astroberry\]' /etc/samba/smb.conf)" ]
+if [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry:')" ] && [ -z "$(grep '\[astroberry\]' /etc/samba/smb.conf)" ]
 then
     cat >> /etc/samba/smb.conf << EOF
 
@@ -129,8 +150,85 @@ then
    valid users = astroberry
 EOF
 
-    db_get astroberry-server-sysmod/password
-    PASSWORD=$RET
-    echo -e "$PASSWORD\n$PASSWORD" | smbpasswd -s -a astroberry
     systemctl reload smbd.service
+fi
+
+# change greeter
+if [ -e /etc/lightdm/lightdm.conf ] && [ -z "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ]
+then
+    sed -i "s/^greeter-session=pi-greeter/greeter-session=lightdm-gtk-greeter/g" /etc/lightdm/lightdm.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
+then
+    sed -i "s/^\(#\|\)background=.*/background=\/var\/www\/html\/files\/background.jpg/g" /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
+then
+    sed -i "s/^\(#\|\)theme-name=.*/theme-name=Arc-Dark/g" /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^icon-theme-name=Numix' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
+then
+    sed -i "s/^\(#\|\)icon-theme-name=.*/icon-theme-name=Numix/g" /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
+then
+    sed -i "s/^\(#\|\)default-user-image=.*/default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png/g" /etc/lightdm/lightdm-gtk-greeter.conf ||  echo "default-user-image=/usr/share/astroberry-server-artwork/astroberry-logo-small.png" >> /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+# enable qt5 menu icons
+if [ -e /etc/xdg/qt5ct/qt5ct.conf ]
+then
+    sed -i "s/^menus_have_icons=false/menus_have_icons=true/g" /etc/xdg/qt5ct/qt5ct.conf
+fi
+
+# lock numix-icon-theme
+if [ ! -e /etc/apt/preferences.d/astroberry-server.conf ]
+then
+    cat > /etc/apt/preferences.d/astroberry-server.conf << EOF
+Package: numix-icon-theme,
+Pin: release *
+Pin-Priority: -1
+EOF
+
+fi
+
+# set start-here icon
+if [ ! -e /usr/share/icons/Numix/16/places/start-here.svg.bak ]
+then
+    mv /usr/share/icons/Numix/16/places/start-here.svg /usr/share/icons/Numix/16/places/start-here.svg.bak
+    ln -sf /usr/share/astroberry-server-artwork/astroberry_logo.svg /usr/share/icons/Numix/16/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/22/places/start-here.svg.bak ]
+then
+    mv /usr/share/icons/Numix/22/places/start-here.svg /usr/share/icons/Numix/22/places/start-here.svg.bak
+    ln -sf /usr/share/astroberry-server-artwork/astroberry_logo.svg /usr/share/icons/Numix/22/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/24/places/start-here.svg.bak ]
+then
+    mv /usr/share/icons/Numix/24/places/start-here.svg /usr/share/icons/Numix/24/places/start-here.svg.bak
+    ln -sf /usr/share/astroberry-server-artwork/astroberry_logo.svg /usr/share/icons/Numix/24/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/32/places/start-here.svg.bak ]
+then
+    mv /usr/share/icons/Numix/32/places/start-here.svg /usr/share/icons/Numix/32/places/start-here.svg.bak
+    ln -sf /usr/share/astroberry-server-artwork/astroberry_logo.svg /usr/share/icons/Numix/32/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/48/places/start-here.svg.bak ]
+then
+    mv /usr/share/icons/Numix/48/places/start-here.svg /usr/share/icons/Numix/48/places/start-here.svg.bak
+    ln -sf /usr/share/astroberry-server-artwork/astroberry_logo.svg /usr/share/icons/Numix/48/places/start-here.svg
+fi
+
+if [ ! -e /usr/share/icons/Numix/64/places/start-here.svg.bak ]
+then
+    mv /usr/share/icons/Numix/64/places/start-here.svg /usr/share/icons/Numix/64/places/start-here.svg.bak
+    ln -sf /usr/share/astroberry-server-artwork/astroberry_logo.svg /usr/share/icons/Numix/64/places/start-here.svg
 fi

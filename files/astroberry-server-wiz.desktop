@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Astroberry Server First-Run Wizard
+Name[en_GB]=Astroberry Server First-Run Wizard
+GenericName=Astroberry Server First-Run Wizard
+GenericName[en_GB]=Astroberry Server First-Run Wizard
+Comment=Configure Astroberry Server on first run
+Comment[en_GB]=Configure Astroberry Server on first run
+Icon=rpi
+Exec=sudo astroberry-server-wiz
+NotShowIn=GNOME;XFCE;
+StartupNotify=true
+Categories=Settings;DesktopSettings;GTK;X-LXDE-Settings;

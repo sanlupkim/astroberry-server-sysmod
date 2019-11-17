@@ -2,3 +2,4 @@
 @pcmanfm --desktop --profile LXDE-astroberry
 @xscreensaver -no-splash
 point-rpi
+astroberry-init.sh

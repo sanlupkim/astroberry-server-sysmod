@@ -10,6 +10,7 @@ set(CONFIG_INSTALL_DIR "/etc")
 set(NM_CONFIG_DIR "/etc/NetworkManager")
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/files/astroberry-init.sh DESTINATION ${BIN_INSTALL_DIR})
         install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/files/startlxde-astroberry DESTINATION ${BIN_INSTALL_DIR})
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/files/openbox-lxde-astroberry DESTINATION ${BIN_INSTALL_DIR})
         install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/files/lxde-astroberry-rc.xml DESTINATION ${CONFIG_INSTALL_DIR}/xdg/openbox)

@@ -105,46 +105,7 @@ Plugin {
 Plugin {
   type=space
   Config {
-    Size=2
-  }
-}
-Plugin {
-  type=tray
-  Config {
-  }
-}
-Plugin {
-  type=ejecter
-  Config {
-    AutoHide=1
-  }
-}
-Plugin {
-  type=space
-  Config {
-    Size=2
-  }
-}
-Plugin {
-  type=bluetooth
-  Config {
-  }
-}
-Plugin {
-  type=space
-  Config {
-    Size=2
-  }
-}
-Plugin {
-  type=volumealsabt
-  Config {
-  }
-}
-Plugin {
-  type=space
-  Config {
-    Size=2
+    Size=10
   }
 }
 Plugin {
@@ -155,7 +116,58 @@ Plugin {
 Plugin {
   type=space
   Config {
-    Size=2
+    Size=10
+  }
+}
+Plugin {
+  type=monitors
+  Config {
+    DisplayCPU=1
+    DisplayRAM=1
+    CPUColor=#0000FF
+    RAMColor=#FF0000
+  }
+}
+Plugin {
+  type=space
+  Config {
+    Size=10
+  }
+}
+Plugin {
+  type=tray
+  Config {
+  }
+}
+Plugin {
+  type=bluetooth
+  Config {
+  }
+}
+Plugin {
+  type=volumealsabt
+  Config {
+  }
+}
+Plugin {
+  type=ejecter
+  Config {
+    AutoHide=1
+  }
+}
+Plugin {
+  type=weather
+  Config {
+    alias=Warsaw
+    city=Warsaw
+    state=Masovian Voivodeship
+    country=Poland
+    units=c
+    latitude=52.231924
+    longitude=21.006726
+    interval=20
+    enabled=1
+    provider=openweathermap
   }
 }
 Plugin {

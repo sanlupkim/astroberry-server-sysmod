@@ -10,13 +10,13 @@ NC='\033[0m'
 # LEAVE THE ACCOUNT UNTOUCHED
 
 # Set GUI autologin for astroberry user
-if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi:')" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/^autologin-user=.*/autologin-user=pi/g" /etc/lightdm/lightdm.conf
 fi
 
 # Restore console autologin for pi user
-if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi:')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/--autologin astroberry/--autologin pi/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
 fi
@@ -28,10 +28,11 @@ then
 fi
 
 # Unlock pi user account
-if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi:')" ] && [ -n "$(passwd -S pi | grep '^pi L')" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(passwd -S pi | grep '^pi L')" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    echo -e "${RED}Default pi account has been enabled.${NC}"
+    echo -e "${RED}Default pi account has been reenabled.${NC}"
     passwd -u pi
+    usermod -s /bin/bash pi
 fi
 
 # ========================================= SWAP SETTINGS ==============================================
@@ -107,27 +108,6 @@ then
     sed -i "s/astroberry/raspberrypi/g" /etc/hosts
 fi
 
-# restore default pi first run wizard
-if [ ! -e /etc/xdg/autostart/piwiz.desktop ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    cat > /etc/xdg/autostart/piwiz.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=Raspberry Pi First-Run Wizard
-Name[en_GB]=Raspberry Pi First-Run Wizard
-GenericName=Raspberry Pi First-Run Wizard
-GenericName[en_GB]=Raspberry Pi First-Run Wizard
-Comment=Configure Raspberry Pi system on first run
-Comment[en_GB]=Configure Raspberry Pi system on first run
-Icon=rpi
-Exec=sudo piwiz
-NotShowIn=GNOME;XFCE;
-StartupNotify=true
-Categories=Settings;DesktopSettings;GTK;X-LXDE-Settings;
-EOF
-
-fi
-
 # restore pi password change prompt
 if [ ! -e /etc/xdg/autostart/pprompt.desktop ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
@@ -144,14 +124,14 @@ EOF
     touch /run/sshwarn
 fi
 
-# configure lxde-astroberry
+# remove lxde-astroberry
 if [ -n "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     update-alternatives --remove x-session-manager /usr/bin/startlxde-astroberry
 fi
 
 # disactivate custom configuration for samba
-if [ "$1" = "remove" -o "$1" = "purge" ]
+if [ -n "$(pdbedit -L | grep astroberry)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     pdbedit -x astroberry
     systemctl reload smbd.service
@@ -173,7 +153,7 @@ then
     sed -i "s/^theme-name=/#theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
 fi
 
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^icon-theme-name=Numix' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^icon-theme-name=PiXflat' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/^icon-theme-name=/#icon-theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
 fi
@@ -189,40 +169,35 @@ then
     sed -i "s/^menus_have_icons=true/menus_have_icons=false/g" /etc/xdg/qt5ct/qt5ct.conf
 fi
 
-# unlock numix-icon-theme
-if [ -e /etc/apt/preferences.d/astroberry-server.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
+# unlock pixflat-icons
+if [ -e /etc/apt/preferences.d/astroberry-server ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    rm -rf /etc/apt/preferences.d/astroberry-server.conf
+    rm -rf /etc/apt/preferences.d/astroberry-server
 fi
 
 # restore start-here icon
-if [ ! -e /usr/share/icons/Numix/16/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ ! -e /usr/share/icons/PiXflat/16x16/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    mv -f /usr/share/icons/Numix/16/places/start-here.svg.bak /usr/share/icons/Numix/16/places/start-here.svg
+    ln -sf /usr/share/icons/PiXflat/16x16/places/rpi-logo.png /usr/share/icons/PiXflat/16x16/places/start-here.png
 fi
 
-if [ ! -e /usr/share/icons/Numix/22/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ ! -e /usr/share/icons/PiXflat/24x24/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    mv -f /usr/share/icons/Numix/22/places/start-here.svg.bak /usr/share/icons/Numix/22/places/start-here.svg
+    ln -sf /usr/share/icons/PiXflat/24x24/places/rpi-logo.png /usr/share/icons/PiXflat/24x24/places/start-here.png
 fi
 
-if [ ! -e /usr/share/icons/Numix/24/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ ! -e /usr/share/icons/PiXflat/32x32/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    mv -f /usr/share/icons/Numix/24/places/start-here.svg.bak /usr/share/icons/Numix/24/places/start-here.svg
+    ln -sf /usr/share/icons/PiXflat/32x32/places/rpi-logo.png /usr/share/icons/PiXflat/32x32/places/start-here.png
 fi
 
-if [ ! -e /usr/share/icons/Numix/32/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ ! -e /usr/share/icons/PiXflat/48x48/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    mv -f /usr/share/icons/Numix/32/places/start-here.svg.bak /usr/share/icons/Numix/32/places/start-here.svg
+    ln -sf /usr/share/icons/PiXflat/48x48/places/rpi-logo.png /usr/share/icons/PiXflat/48x48/places/start-here.png
 fi
 
-if [ ! -e /usr/share/icons/Numix/48/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
+# reset network manager
+if [ -e /etc/wpa_supplicant/wpa_supplicant.conf.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    mv -f /usr/share/icons/Numix/48/places/start-here.svg.bak /usr/share/icons/Numix/48/places/start-here.svg
+    mv -f /etc/wpa_supplicant/wpa_supplicant.conf.bak /etc/wpa_supplicant/wpa_supplicant.conf
 fi
-
-if [ ! -e /usr/share/icons/Numix/64/places/start-here.svg.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    mv -f /usr/share/icons/Numix/64/places/start-here.svg.bak /usr/share/icons/Numix/64/places/start-here.svg
-fi
-

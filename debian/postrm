@@ -98,12 +98,12 @@ fi
 # ========================================= TWEAKS ======================================================
 
 # set hostname
-if [ -n "$(grep 'astroberry' /etc/hostname)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ -n "$(grep '^astroberry$' /etc/hostname)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     echo "raspberrypi" > /etc/hostname
 fi
 
-if [ -n "$(grep 'astroberry' /etc/hosts)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
+if [ -n "$(grep '127.0.1.1' /etc/hosts| tr -d '127.0.1.1'| tr -d [:blank:] | grep '^astroberry$')" ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
     sed -i "s/astroberry/raspberrypi/g" /etc/hosts
 fi

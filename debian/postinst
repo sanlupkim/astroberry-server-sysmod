@@ -25,7 +25,7 @@ fi
 # Set console autologin for astroberry user
 if [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ]
 then
-    sed -i "s/--autologin pi /--autologin astroberry/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+    sed -i "s/--autologin pi --noclear/--autologin astroberry --noclear/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
 fi
 
 # Set authorization for all sudo users
@@ -114,6 +114,12 @@ then
     sed -i "s/^\(#\|\)gpu_mem=.*/gpu_mem=128/g" /boot/config.txt
 else
     echo "gpu_mem=128" >> /boot/config.txt
+fi
+
+# disable serial on tty1
+if [ -n "$(grep 'console=serial0,115200 console=tty1' /boot/cmdline.txt)" ]
+then
+    sed -i "s/console=serial0,115200 console=tty1/console=tty1/g" /boot/cmdline.txt
 fi
 
 # ========================================= TWEAKS ======================================================
@@ -354,3 +360,24 @@ then
     mv -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf.bak
     systemctl restart NetworkManager.service
 fi
+
+# Set log directory access rights
+if [ ! -d /var/log/astroberry ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ]
+then
+    mkdir /var/log/astroberry
+    chmod 750 /var/log/astroberry
+    chown astroberry:adm /var/log/astroberry
+fi
+
+# Set qt5ct font
+if [ -e /etc/xdg/qt5ct/qt5ct.conf ]
+then
+    sed -i "s/0t@(/0t@$/g" /etc/xdg/qt5ct/qt5ct.conf
+fi
+
+# fix for RPi 4 video resolution
+if [ -n "$(grep 'dtoverlay=vc4-fkms-v3d' /boot/config.txt)" ]
+then
+    sed -i "s/^dtoverlay=vc4-fkms-v3d/#dtoverlay=vc4-fkms-v3d/g" /boot/config.txt
+fi
+

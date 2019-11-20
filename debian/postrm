@@ -18,7 +18,7 @@ fi
 # Restore console autologin for pi user
 if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
 then
-    sed -i "s/--autologin astroberry/--autologin pi/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+    sed -i "s/--autologin astroberry --noclear/--autologin pi --noclear/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
 fi
 
 # Restore defaults for authorization for pi user only

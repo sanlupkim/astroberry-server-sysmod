@@ -1,3 +1,9 @@
+astroberry-server-sysmod (2.0.1) UNRELEASED; urgency=medium
+
+  * Fixing astroberry-init file
+
+ -- Radek Kaczorek <rkaczorek@gmail.com>  Wed, 20 Nov 2019 19:21:10 +0100
+
 astroberry-server-sysmod (2.0.0) buster; urgency=medium
 
   * Initial release.

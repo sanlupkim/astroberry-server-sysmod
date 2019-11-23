@@ -9,10 +9,6 @@ Project home page is located at <a href=''>www.astroberry.io</a>"
 if [ -n "$(grep '^astroberry-init.sh' /etc/xdg/lxsession/LXDE-astroberry/autostart)" ]
 then
     zenity --title "Astroberry Server" --width=400 --height=300 --info --text="$INFO" --icon-name="start-here"
-    SUDO_ASKPASS="$(zenity --password --title 'Password Required')"
-    if [ -n "$SUDO_ASKPASS" ]
-    then
-        sudo -AE rc_gui
-        sudo -AE sed -i "s/^astroberry-init.sh/#astroberry-init.sh/g" /etc/xdg/lxsession/LXDE-astroberry/autostart
-    fi
+    env SUDO_ASKPASS=/usr/lib/rc-gui/pwdrcg.sh sudo -AE rc_gui
+    sudo -AE sed -i "s/^astroberry-init.sh/#astroberry-init.sh/g" /etc/xdg/lxsession/LXDE-astroberry/autostart
 fi

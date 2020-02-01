@@ -1,3 +1,9 @@
+astroberry-server-sysmod (2.0.2) buster; urgency=medium
+
+  * Adding chrony for time synchronization from GPS
+
+ -- Radek Kaczorek <rkaczorek@gmail.com>  Fri, 31 Jan 2020 20:16:21 +0100
+
 astroberry-server-sysmod (2.0.1) buster; urgency=medium
 
   * Fixing astroberry-init file

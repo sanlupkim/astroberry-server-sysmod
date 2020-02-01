@@ -381,3 +381,12 @@ then
     sed -i "s/^dtoverlay=vc4-fkms-v3d/#dtoverlay=vc4-fkms-v3d/g" /boot/config.txt
 fi
 
+# Set chrony
+if [ -z "$(grep '^refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]
+then
+    echo "refclock SHM 0 offset 0.5 delay 0.2 refid GPS" >> /etc/chrony/chrony.conf
+elif [ -z "$(grep '^#refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]
+then
+    sed -i "s/#refclock SHM 0 offset 0.5 delay 0.2 refid GPS/refclock SHM 0 offset 0.5 delay 0.2 refid GPS/g" /etc/chrony/chrony.conf
+fi
+

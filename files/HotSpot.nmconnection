@@ -1,0 +1,26 @@
+[connection]
+id=Astroberry HotSpot
+uuid=CHANGE_ME
+type=wifi
+autoconnect-priority=-999
+permissions=
+
+[wifi]
+band=bg
+mac-address-blacklist=
+mode=ap
+ssid=CHANGE_ME
+
+[wifi-security]
+key-mgmt=wpa-psk
+psk=astroberry
+
+[ipv4]
+dns-search=
+method=shared
+
+[ipv6]
+addr-gen-mode=stable-privacy
+dns-search=
+ip6-privacy=0
+method=shared

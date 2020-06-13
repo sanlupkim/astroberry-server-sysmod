@@ -1,0 +1,12 @@
+#!/bin/bash
+# prerm script for astroberry-server-wui
+
+if [ "$1" = "remove" -o "$1" = "purge" ]
+then
+        # remove lxde-astroberry
+        if [ -n "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ]
+        then
+            update-alternatives --remove x-session-manager /usr/bin/startlxde-astroberry
+            update-alternatives --auto x-session-manager
+        fi
+fi

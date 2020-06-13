@@ -1,3 +1,15 @@
+astroberry-server-sysmod (2.0.4) buster; urgency=medium
+
+  * Fix for post install/remove scripts
+
+ -- Radek Kaczorek <rkaczorek@gmail.com>  Thu, 11 Jun 2020 23:18:46 +0200
+
+astroberry-server-sysmod (2.0.3) buster; urgency=medium
+
+  * Fix for Raspberry Pi 4B 8GB version
+
+ -- Radek Kaczorek <rkaczorek@gmail.com>  Wed, 10 Jun 2020 00:56:25 +0200
+
 astroberry-server-sysmod (2.0.2) buster; urgency=medium
 
   * Adding chrony for time synchronization from GPS

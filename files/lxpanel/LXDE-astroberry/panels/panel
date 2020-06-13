@@ -156,21 +156,6 @@ Plugin {
   }
 }
 Plugin {
-  type=weather
-  Config {
-    alias=Warsaw
-    city=Warsaw
-    state=Masovian Voivodeship
-    country=Poland
-    units=c
-    latitude=52.231924
-    longitude=21.006726
-    interval=20
-    enabled=0
-    provider=openweathermap
-  }
-}
-Plugin {
   type=dclock
   Config {
     ClockFmt=%R:%S

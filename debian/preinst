@@ -1,0 +1,124 @@
+#!/bin/bash
+# preinst script for astroberry-server-sysmod
+# Some tweaks come from AstroPi https://github.com/rlancaste/AstroPi3
+# For all of these credits go to Rob Lancaster
+
+# setup astroberry user
+if [ "$1" = "install" ] && [ -z "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ]; then
+    useradd -m -G adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi astroberry
+    echo -e "astroberry\nastroberry" | passwd astroberry
+fi
+
+if [ "$1" = "install" ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ] && [ -z "$(pdbedit -L | grep astroberry)" ]; then
+    echo -e "astroberry\nastroberry" | smbpasswd -s -a astroberry
+fi
+
+# set log directory and access rights
+if [ "$1" = "install" ] && [ ! -d /var/log/astroberry ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ]; then
+    mkdir /var/log/astroberry
+    chmod 750 /var/log/astroberry
+    chown astroberry:adm /var/log/astroberry
+fi
+
+# set GUI autologin for astroberry user
+if [ "$1" = "install" ] && [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ]; then
+    sed -i "s/^autologin-user=.*/autologin-user=astroberry/g" /etc/lightdm/lightdm.conf
+fi
+
+# set console autologin for astroberry user
+if [ "$1" = "install" ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ]; then
+    sed -i "s/--autologin pi --noclear/--autologin astroberry --noclear/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+fi
+
+# set display to 1920x1080
+# see available modes: https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
+if [ "$1" = "install" ] && [ -n "$(grep 'hdmi_force_hotplug=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)hdmi_force_hotplug=.*/hdmi_force_hotplug=1/g" /boot/config.txt
+else
+    echo "hdmi_force_hotplug=1" >> /boot/config.txt
+fi
+
+if [ "$1" = "install" ] && [ -n "$(grep 'hdmi_group=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)hdmi_group=.*/hdmi_group=2/g" /boot/config.txt
+else
+    echo "hdmi_group=2" >> /boot/config.txt
+fi
+
+if [ "$1" = "install" ] && [ -n "$(grep 'hdmi_mode=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)hdmi_mode=.*/hdmi_mode=82/g" /boot/config.txt
+else
+    echo "hdmi_mode=82" >> /boot/config.txt
+fi
+
+# enable I2C
+if [ "$1" = "install" ] && [ -n "$(grep 'dtparam=i2c_arm=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)dtparam=i2c_arm=.*/dtparam=i2c_arm=on/g" /boot/config.txt
+else
+    echo "dtparam=i2c_arm=on" >> /boot/config.txt
+fi
+
+# enable SPI
+if [ "$1" = "install" ] && [ -n "$(grep 'dtparam=spi=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)dtparam=spi=.*/dtparam=spi=on/g" /boot/config.txt
+else
+    echo "dtparam=spi=on" >> /boot/config.txt
+fi
+
+# enable audio
+if [ "$1" = "install" ] && [ -n "$(grep 'dtparam=audio=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)dtparam=audio=.*/dtparam=audio=on/g" /boot/config.txt
+else
+    echo "dtparam=audio=on" >> /boot/config.txt
+fi
+
+# enable uart
+if [ "$1" = "install" ] && [ -n "$(grep 'enable_uart=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)enable_uart=.*/enable_uart=1/g" /boot/config.txt
+else
+    echo "enable_uart=1" >> /boot/config.txt
+fi
+
+# set gpu memory
+if [ "$1" = "install" ] && [ -n "$(grep 'gpu_mem=' /boot/config.txt)" ]; then
+    sed -i "s/^\(#\|\)gpu_mem=.*/gpu_mem=128/g" /boot/config.txt
+else
+    echo "gpu_mem=128" >> /boot/config.txt
+fi
+
+# disable serial on tty1
+if [ "$1" = "install" ] && [ -n "$(grep 'console=serial0,115200 console=tty1' /boot/cmdline.txt)" ]; then
+    sed -i "s/console=serial0,115200 console=tty1/console=tty1/g" /boot/cmdline.txt
+fi
+
+# fix for RPi 4 video resolution
+if [ "$1" = "install" ] && [ -n "$(grep 'dtoverlay=vc4-fkms-v3d' /boot/config.txt)" ]; then
+    sed -i "s/^dtoverlay=vc4-fkms-v3d/#dtoverlay=vc4-fkms-v3d/g" /boot/config.txt
+fi
+
+# set hostname
+if [ "$1" = "install" ] && [ -n "$(grep '^raspberrypi$' /etc/hostname)" ]; then
+    echo "astroberry" > /etc/hostname
+fi
+
+if [ "$1" = "install" ] && [ -n "$(grep '127.0.1.1' /etc/hosts| tr -d '127.0.1.1'| tr -d [:blank:] | grep '^raspberrypi$')" ]; then
+    sed -i "s/raspberrypi/astroberry/g" /etc/hosts
+fi
+
+# remove pi password change prompt
+if [ "$1" = "install" ] && [ -e /run/sshwarn ]; then
+    rm -rf /run/sshwarn
+fi
+
+# handle custom config files
+if [ "$1" = "install" ]; then
+    mv -f /etc/xdg/libfm/libfm.conf /etc/xdg/libfm/libfm.conf.disabled
+    ln -s /etc/xdg/libfm/libfm.conf.astroberry /etc/xdg/libfm/libfm.conf
+    mv -f /etc/samba/smb.conf /etc/samba/smb.conf.disabled
+    ln -s /etc/samba/smb.conf.astroberry /etc/samba/smb.conf
+fi
+
+# unlock pi user account
+if [ "$1" = "upgrade" ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(passwd -S pi | grep '^pi L')" ]; then
+    passwd -u pi
+    usermod -s /bin/bash pi
+fi

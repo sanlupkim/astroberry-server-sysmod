@@ -1,210 +1,87 @@
-#!/bin/bash -e
+#!/bin/bash
 # postrm script for astroberry-server-wui
 
-# ======================================== USER SETTINGS ===============================================
+if [ "$1" = "remove" -o "$1" = "purge" ]; then
 
-RED='\033[0;31m'
-NC='\033[0m'
+	# restore GUI autologin for pi user
+	if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(grep '^autologin-user=astroberry$' /etc/lightdm/lightdm.conf)" ]; then
+	    sed -i "s/^autologin-user=astroberry/autologin-user=pi/g" /etc/lightdm/lightdm.conf
+	fi
 
-# Remove astroberry user
-# LEAVE THE ACCOUNT UNTOUCHED
+	# Restore console autologin for pi user
+	if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ] && [ -n "$(grep 'autologin astroberry' /etc/systemd/system/getty@tty1.service.d/autologin.conf)"  ]; then
+	    sed -i "s/--autologin astroberry --noclear/--autologin pi --noclear/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
+	fi
 
-# Set GUI autologin for astroberry user
-if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/^autologin-user=.*/autologin-user=pi/g" /etc/lightdm/lightdm.conf
+	# reset hostname
+	if [ -n "$(grep '^astroberry$' /etc/hostname)" ]; then
+	    echo "raspberrypi" > /etc/hostname
+	fi
+
+	if [ -n "$(grep '127.0.1.1' /etc/hosts| tr -d '127.0.1.1'| tr -d [:blank:] | grep '^astroberry$')" ]; then
+	    sed -i "s/astroberry/raspberrypi/g" /etc/hosts
+	fi
+
+	# remove astroberry user from samba
+	if [ -n "$(pdbedit -L | grep astroberry)" ]; then
+	    pdbedit -x astroberry
+	fi
+
+	# restore greeter
+	if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ]; then
+	    sed -i "s/^greeter-session=lightdm-gtk-greeter/greeter-session=pi-greeter/g" /etc/lightdm/lightdm.conf
+	fi
+
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^background=/#background=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
+
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^theme-name=/#theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
+
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^icon-theme-name=PiXflat' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^icon-theme-name=/#icon-theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
+
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^default-user-image=/#default-user-image=/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
+
+	# disable qt5 menu icons
+	if [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ -n "$(grep '^menus_have_icons=true' /etc/xdg/qt5ct/qt5ct.conf)" ]; then
+	    sed -i "s/^menus_have_icons=true/menus_have_icons=false/g" /etc/xdg/qt5ct/qt5ct.conf
+	fi
+
+	# restore start-here icon
+	if [ -e /usr/share/icons/PiXflat/16x16/places/rpi-logo.png.bak ]; then
+	    mv /usr/share/icons/PiXflat/16x16/places/rpi-logo.png.bak /usr/share/icons/PiXflat/16x16/places/rpi-logo.png
+	    ln -sf /usr/share/icons/PiXflat/16x16/places/rpi-logo.png /usr/share/icons/PiXflat/16x16/places/start-here.png
+	fi
+	if [ -e /usr/share/icons/PiXflat/24x24/places/rpi-logo.png.bak ]; then
+	    mv /usr/share/icons/PiXflat/24x24/places/rpi-logo.png.bak /usr/share/icons/PiXflat/24x24/places/rpi-logo.png
+	    ln -sf /usr/share/icons/PiXflat/24x24/places/rpi-logo.png /usr/share/icons/PiXflat/24x24/places/start-here.png
+	fi
+	if [ -e /usr/share/icons/PiXflat/32x32/places/rpi-logo.png.bak ]; then
+            mv /usr/share/icons/PiXflat/32x32/places/rpi-logo.png.bak /usr/share/icons/PiXflat/32x32/places/rpi-logo.png
+	    ln -sf /usr/share/icons/PiXflat/32x32/places/rpi-logo.png /usr/share/icons/PiXflat/32x32/places/start-here.png
+	fi
+	if [ -e /usr/share/icons/PiXflat/48x48/places/rpi-logo.png.bak ]; then
+	    mv /usr/share/icons/PiXflat/48x48/places/rpi-logo.png.bak /usr/share/icons/PiXflat/48x48/places/rpi-logo.png
+	    ln -sf /usr/share/icons/PiXflat/48x48/places/rpi-logo.png /usr/share/icons/PiXflat/48x48/places/start-here.png
+	fi
+
+	# unset chrony
+	if [ -e /etc/chrony/chrony.conf ] && [ -n "$(grep '^refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]; then
+	    sed -i "s/^refclock SHM 0 offset 0.5 delay 0.2 refid GPS/#refclock SHM 0 offset 0.5 delay 0.2 refid GPS/g" /etc/chrony/chrony.conf
+	fi
+
+        # handle custom config files
+	if [ -e /etc/xdg/libfm/libfm.conf.disabled ]; then
+		mv -f /etc/xdg/libfm/libfm.conf.disabled /etc/xdg/libfm/libfm.conf
+	fi
+	if [ -e /etc/samba/smb.conf.disabled ]; then
+	        mv -f /etc/samba/smb.conf.disabled /etc/samba/smb.conf
+	fi
+
 fi
-
-# Restore console autologin for pi user
-if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/--autologin astroberry --noclear/--autologin pi --noclear/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
-fi
-
-# Restore defaults for authorization for pi user only
-if [ -e /etc/polkit-1/localauthority.conf.d/70-localauthority.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    rm -rf /etc/polkit-1/localauthority.conf.d/70-localauthority.conf
-fi
-
-# Unlock pi user account
-if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(passwd -S pi | grep '^pi L')" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    echo -e "${RED}Default pi account has been reenabled.${NC}"
-    passwd -u pi
-    usermod -s /bin/bash pi
-fi
-
-# ========================================= SWAP SETTINGS ==============================================
-
-# disable zram swap
-if [ -z "$(systemctl status zramswap.service | grep enabled)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    systemctl stop zramswap.service
-    systemctl disable zramswap.service
-    sed -i "s/^PERCENTAGE/#PERCENTAGE/g" /etc/default/zramswap
-fi
-
-# ========================================= BOOT SETTINGS ==============================================
-
-# set display to 1920x1080
-# see available modes: https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
-
-if [ -n "$(grep '^hdmi_force_hotplug=1' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/hdmi_force_hotplug=1//g" /boot/config.txt
-fi
-
-if [ -n "$(grep '^hdmi_group=2' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/hdmi_group=2//g" /boot/config.txt
-fi
-
-if [ -n "$(grep '^hdmi_mode=82' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/hdmi_mode=82//g" /boot/config.txt
-fi
-
-# enable I2C
-if [ -n "$(grep '^dtparam=i2c_arm=on' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/dtparam=i2c_arm=on//g" /boot/config.txt
-fi
-
-# enable SPI
-if [ -n "$(grep '^dtparam=spi=on' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/dtparam=spi=on//g" /boot/config.txt
-fi
-
-# enable audio
-if [ -n "$(grep '^dtparam=audio=on' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/dtparam=audio=on//g" /boot/config.txt
-fi
-
-# enable uart
-if [ -n "$(grep '^enable_uart=1' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/enable_uart=1//g" /boot/config.txt
-fi
-
-# set gpu memory
-if [ -n "$(grep '^gpu_mem=128' /boot/config.txt)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/gpu_mem=128//g" /boot/config.txt
-fi
-
-# ========================================= TWEAKS ======================================================
-
-# set hostname
-if [ -n "$(grep '^astroberry$' /etc/hostname)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    echo "raspberrypi" > /etc/hostname
-fi
-
-if [ -n "$(grep '127.0.1.1' /etc/hosts| tr -d '127.0.1.1'| tr -d [:blank:] | grep '^astroberry$')" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/astroberry/raspberrypi/g" /etc/hosts
-fi
-
-# restore pi password change prompt
-if [ ! -e /etc/xdg/autostart/pprompt.desktop ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    cat > /etc/xdg/autostart/pprompt.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=pprompt
-Comment=Prompt to change default password if ssh enabled
-NoDisplay=true
-Exec=sh /etc/xdg/lxsession/LXDE-pi/sshpwd.sh
-NotShowIn=GNOME;KDE;XFCE;
-EOF
-
-    touch /run/sshwarn
-fi
-
-# remove lxde-astroberry
-if [ -n "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    update-alternatives --remove x-session-manager /usr/bin/startlxde-astroberry
-fi
-
-# disactivate custom configuration for samba
-if [ -n "$(pdbedit -L | grep astroberry)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    pdbedit -x astroberry
-    systemctl reload smbd.service
-fi
-
-# restore greeter
-if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/^greeter-session=lightdm-gtk-greeter/greeter-session=pi-greeter/g" /etc/lightdm/lightdm.conf
-fi
-
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/^background=/#background=/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
-
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/^theme-name=/#theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
-
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^icon-theme-name=PiXflat' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/^icon-theme-name=/#icon-theme-name=/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
-
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -n "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/^default-user-image=/#default-user-image=/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
-
-# disable qt5 menu icons
-if [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    sed -i "s/^menus_have_icons=true/menus_have_icons=false/g" /etc/xdg/qt5ct/qt5ct.conf
-fi
-
-# unlock pixflat-icons
-if [ -e /etc/apt/preferences.d/astroberry-server ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    rm -rf /etc/apt/preferences.d/astroberry-server
-fi
-
-# restore start-here icon
-if [ ! -e /usr/share/icons/PiXflat/16x16/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    ln -sf /usr/share/icons/PiXflat/16x16/places/rpi-logo.png /usr/share/icons/PiXflat/16x16/places/start-here.png
-fi
-
-if [ ! -e /usr/share/icons/PiXflat/24x24/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    ln -sf /usr/share/icons/PiXflat/24x24/places/rpi-logo.png /usr/share/icons/PiXflat/24x24/places/start-here.png
-fi
-
-if [ ! -e /usr/share/icons/PiXflat/32x32/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    ln -sf /usr/share/icons/PiXflat/32x32/places/rpi-logo.png /usr/share/icons/PiXflat/32x32/places/start-here.png
-fi
-
-if [ ! -e /usr/share/icons/PiXflat/48x48/places/rpi-logo.png ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    ln -sf /usr/share/icons/PiXflat/48x48/places/rpi-logo.png /usr/share/icons/PiXflat/48x48/places/start-here.png
-fi
-
-# reset network manager
-if [ -e /etc/wpa_supplicant/wpa_supplicant.conf.bak ] && [ "$1" = "remove" -o "$1" = "purge" ]
-then
-    mv -f /etc/wpa_supplicant/wpa_supplicant.conf.bak /etc/wpa_supplicant/wpa_supplicant.conf
-fi
-
-# Unset chrony
-if [ -n "$(grep '^refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]
-then
-    sed -i "s/refclock SHM 0 offset 0.5 delay 0.2 refid GPS/#refclock SHM 0 offset 0.5 delay 0.2 refid GPS/g" /etc/chrony/chrony.conf
-fi
-

@@ -1,392 +1,105 @@
-#!/bin/bash -e
+#!/bin/bash
 # postinst script for astroberry-server-sysmod
 # Some tweaks come from AstroPi https://github.com/rlancaste/AstroPi3
 # For all of these credits go to Rob Lancaster
 
-# ======================================== USER SETTINGS ===============================================
-
-RED='\033[0;31m'
-NC='\033[0m'
-
-# Setup astroberry user
-if [ -z "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ]
-then
-    useradd -m -G adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi astroberry
-    echo -e "astroberry\nastroberry" | passwd astroberry
-    echo -e "astroberry\nastroberry" | smbpasswd -s -a astroberry
-fi
-
-# Set GUI autologin for astroberry user
-if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ] && [ -n "$(grep '^autologin-user=' /etc/lightdm/lightdm.conf)" ]
-then
-    sed -i "s/^autologin-user=.*/autologin-user=astroberry/g" /etc/lightdm/lightdm.conf
-fi
-
-# Set console autologin for astroberry user
-if [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ] && [ -e /etc/systemd/system/getty@tty1.service.d/autologin.conf ]
-then
-    sed -i "s/--autologin pi --noclear/--autologin astroberry --noclear/g" /etc/systemd/system/getty@tty1.service.d/autologin.conf
-fi
-
-# Set authorization for all sudo users
-if [ ! -e /etc/polkit-1/localauthority.conf.d/70-localauthority.conf ]
-then
-    echo -e "[Configuration]\nAdminIdentities=unix-group:sudo" > /etc/polkit-1/localauthority.conf.d/70-localauthority.conf
-fi
-
-# disable pi account
-if [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(passwd -S pi | grep '^pi P')" ]
-then
-    echo -e "${RED}Default pi account has been disabled. You can reenable it anytime by running: \$ sudo passwd -u pi${NC}"
-    usermod -L pi
-    usermod -s /sbin/nologin pi
-fi
-
-# ========================================= SWAP SETTINGS ==============================================
-
-# setup zram swap
-if [ -z "$(systemctl status zramswap.service | grep enabled)" ]
-then
-    sed -i "s/#PERCENTAGE/PERCENTAGE/g" /etc/default/zramswap
-fi
-
-# ========================================= BOOT SETTINGS ==============================================
-
-# set display to 1920x1080
-# see available modes: https://www.raspberrypi.org/documentation/configuration/config-txt/video.md
-
-if [ -n "$(grep 'hdmi_force_hotplug=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)hdmi_force_hotplug=.*/hdmi_force_hotplug=1/g" /boot/config.txt
-else
-    echo "hdmi_force_hotplug=1" >> /boot/config.txt
-fi
-
-if [ -n "$(grep 'hdmi_group=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)hdmi_group=.*/hdmi_group=2/g" /boot/config.txt
-else
-    echo "hdmi_group=2" >> /boot/config.txt
-fi
-
-if [ -n "$(grep 'hdmi_mode=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)hdmi_mode=.*/hdmi_mode=82/g" /boot/config.txt
-else
-    echo "hdmi_mode=82" >> /boot/config.txt
-fi
-
-# enable I2C
-if [ -n "$(grep 'dtparam=i2c_arm=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)dtparam=i2c_arm=.*/dtparam=i2c_arm=on/g" /boot/config.txt
-else
-    echo "dtparam=i2c_arm=on" >> /boot/config.txt
-fi
-
-# enable SPI
-if [ -n "$(grep 'dtparam=spi=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)dtparam=spi=.*/dtparam=spi=on/g" /boot/config.txt
-else
-    echo "dtparam=spi=on" >> /boot/config.txt
-fi
-
-# enable audio
-if [ -n "$(grep 'dtparam=audio=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)dtparam=audio=.*/dtparam=audio=on/g" /boot/config.txt
-else
-    echo "dtparam=audio=on" >> /boot/config.txt
-fi
-
-# enable uart
-if [ -n "$(grep 'enable_uart=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)enable_uart=.*/enable_uart=1/g" /boot/config.txt
-else
-    echo "enable_uart=1" >> /boot/config.txt
-fi
-
-# set gpu memory
-if [ -n "$(grep 'gpu_mem=' /boot/config.txt)" ]
-then
-    sed -i "s/^\(#\|\)gpu_mem=.*/gpu_mem=128/g" /boot/config.txt
-else
-    echo "gpu_mem=128" >> /boot/config.txt
-fi
-
-# disable serial on tty1
-if [ -n "$(grep 'console=serial0,115200 console=tty1' /boot/cmdline.txt)" ]
-then
-    sed -i "s/console=serial0,115200 console=tty1/console=tty1/g" /boot/cmdline.txt
-fi
-
-# ========================================= TWEAKS ======================================================
-
-# set hostname
-if [ -n "$(grep '^raspberrypi$' /etc/hostname)" ]
-then
-    echo "astroberry" > /etc/hostname
-fi
-
-if [ -n "$(grep '127.0.1.1' /etc/hosts| tr -d '127.0.1.1'| tr -d [:blank:] | grep '^raspberrypi$')" ]
-then
-    sed -i "s/raspberrypi/astroberry/g" /etc/hosts
-fi
-
-# remove pi password change prompt
-if [ -e /etc/xdg/autostart/pprompt.desktop ]
-then
-    rm -rf /etc/xdg/autostart/pprompt.desktop
-fi
-if [ -e /run/sshwarn ]
-then
-    rm -rf /run/sshwarn
-fi
-
 # configure lxde-astroberry
-if [ -z "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ]
-then
+if [ "$1" = "configure" ] && [ -z "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ]; then
     update-alternatives --install /usr/bin/x-session-manager x-session-manager /usr/bin/startlxde-astroberry 95
 fi
 
-# activate custom configuration for samba
-if [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ] && [ -z "$(grep '\[astroberry\]' /etc/samba/smb.conf)" ]
-then
-    cat >> /etc/samba/smb.conf << EOF
-
-[astroberry]
-   comment = Astroberry Home
-   path = /home/astroberry
-   browseable = yes
-   writeable = yes
-   read only = no
-   create mask = 0644
-   directory mask = 0755
-   valid users = astroberry
-EOF
-
-    systemctl reload smbd.service
-fi
-
 # change greeter
-if [ -e /etc/lightdm/lightdm.conf ] && [ -z "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ]
-then
+if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm.conf ] && [ -z "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ]; then
     sed -i "s/^greeter-session=pi-greeter/greeter-session=lightdm-gtk-greeter/g" /etc/lightdm/lightdm.conf
 fi
 
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
-then
+# change background
+if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
     sed -i "s/^\(#\|\)background=.*/background=\/var\/www\/html\/files\/background.jpg/g" /etc/lightdm/lightdm-gtk-greeter.conf
 fi
 
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
-then
+# change theme
+if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
     sed -i "s/^\(#\|\)theme-name=.*/theme-name=Arc-Dark/g" /etc/lightdm/lightdm-gtk-greeter.conf
 fi
 
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^icon-theme-name=PiXflat' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
-then
+# change icons
+if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^icon-theme-name=PiXflat' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
     sed -i "s/^\(#\|\)icon-theme-name=.*/icon-theme-name=PiXflat/g" /etc/lightdm/lightdm-gtk-greeter.conf
 fi
 
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
-then
+# change default user image
+if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
     sed -i "s/^\(#\|\)default-user-image=.*/default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png/g" /etc/lightdm/lightdm-gtk-greeter.conf
 fi
 
-if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=' /etc/lightdm/lightdm-gtk-greeter.conf)" ]
-then
+# change default user image
+if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
     echo "default-user-image=/usr/share/astroberry-server-artwork/astroberry-logo-small.png" >> /etc/lightdm/lightdm-gtk-greeter.conf
 fi
 
 # enable qt5 menu icons
-if [ -e /etc/xdg/qt5ct/qt5ct.conf ]
-then
+if [ "$1" = "configure" ] && [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ -z "$(grep '^menus_have_icons=true' /etc/xdg/qt5ct/qt5ct.conf)" ]; then
     sed -i "s/^menus_have_icons=false/menus_have_icons=true/g" /etc/xdg/qt5ct/qt5ct.conf
 fi
 
-# lock pixflat-icons
-if [ ! -e /etc/apt/preferences.d/astroberry-server ]
-then
-    cat > /etc/apt/preferences.d/astroberry-server << EOF
-Package: pixflat-icons
-Pin: release *
-Pin-Priority: -1
-EOF
-
-fi
-
-# set start-here icon
-if [ ! -e /usr/share/icons/PiXflat/16x16/places/start-here.svg.bak ]
-then
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/16x16/places/start-here.png
-fi
-
-if [ ! -e /usr/share/icons/PiXflat/24x24/places/start-here.svg.bak ]
-then
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/24x24/places/start-here.png
-fi
-
-if [ ! -e /usr/share/icons/PiXflat/32x32/places/start-here.svg.bak ]
-then
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/32x32/places/start-here.png
-fi
-
-if [ ! -e /usr/share/icons/PiXflat/48x48/places/start-here.svg.bak ]
-then
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/48x48/places/start-here.png
-fi
-
-# set places in pcmanfm
-if [ -e /etc/xdg/libfm/libfm.conf ]
-then
-    sed -i "s/places_home=.*/places_home=1/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_desktop=.*/places_desktop=1/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_root=.*/places_root=1/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_computer=.*/places_computer=0/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_trash=.*/places_trash=1/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_applications=.*/places_applications=0/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_network=.*/places_network=1/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_unmounted=.*/places_unmounted=1/g" /etc/xdg/libfm/libfm.conf
-    sed -i "s/places_volmounts=.*/places_volmounts=1/g" /etc/xdg/libfm/libfm.conf
-fi
-
-# set network manager
-
-# wire =================
-if [ ! -e /etc/NetworkManager/system-connections/Wired.nmconnection ]
-then
-    cat > /etc/NetworkManager/system-connections/Wired.nmconnection << EOF
-[connection]
-id=Wired connection
-uuid=795856c0-7886-3285-8752-10f9466efc2f
-type=ethernet
-autoconnect-priority=999
-interface-name=eth0
-permissions=
-timestamp=1573908596
-
-[ethernet]
-mac-address-blacklist=
-
-[ipv4]
-dns-search=
-method=auto
-
-[ipv6]
-addr-gen-mode=stable-privacy
-dns-search=
-ip6-privacy=0
-method=auto
-EOF
-    chmod 600 /etc/NetworkManager/system-connections/Wired.nmconnection
-fi
-
-# wi-fi =================
-if [ ! -e /etc/NetworkManager/system-connections/Wi-Fi.nmconnection ] && [ -e /etc/wpa_supplicant/wpa_supplicant.conf ]
-then
-    SSID="$(cat /etc/wpa_supplicant/wpa_supplicant.conf | tr -d [:blank:] | grep '^ssid=' | xargs | cut -d= -f2)"
-    PSK="$(cat /etc/wpa_supplicant/wpa_supplicant.conf | tr -d [:blank:] | grep '^psk=' | xargs | cut -d= -f2)"
-    cat > /etc/NetworkManager/system-connections/Wi-Fi.nmconnection << EOF
-[connection]
-id=Wireless connection
-uuid=f79e3ddc-983b-48a6-ac08-6d4a7584f360
-type=wifi
-autoconnect-priority=100
-permissions=
-
-[wifi]
-mac-address-blacklist=
-mode=infrastructure
-ssid=$SSID
-
-[wifi-security]
-key-mgmt=wpa-psk
-psk=$PSK
-
-[ipv4]
-dns-search=
-method=auto
-
-[ipv6]
-addr-gen-mode=stable-privacy
-dns-search=
-ip6-privacy=0
-method=auto
-EOF
-    chmod 600 /etc/NetworkManager/system-connections/Wi-Fi.nmconnection
-fi
-
-# hotspot =================
-if [ ! -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ]
-then
-    cat > /etc/NetworkManager/system-connections/HotSpot.nmconnection << EOF
-[connection]
-id=Astroberry HotSpot
-uuid=388d45ab-7318-4c3e-8337-7e3bc1867945
-type=wifi
-autoconnect-priority=-999
-permissions=
-
-[wifi]
-band=bg
-mac-address-blacklist=
-mode=ap
-ssid=astroberry
-
-[wifi-security]
-key-mgmt=wpa-psk
-psk=astroberry
-
-[ipv4]
-dns-search=
-method=shared
-
-[ipv6]
-addr-gen-mode=stable-privacy
-dns-search=
-ip6-privacy=0
-method=shared
-EOF
-
-    chmod 600 /etc/NetworkManager/system-connections/HotSpot.nmconnection
-fi
-
-# backup wpa_supplicant.conf and restart Network Manager
-if [ -e /etc/wpa_supplicant/wpa_supplicant.conf ]
-then
-    mv -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf.bak
-    systemctl restart NetworkManager.service
-fi
-
-# Set log directory access rights
-if [ ! -d /var/log/astroberry ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^astroberry$')" ]
-then
-    mkdir /var/log/astroberry
-    chmod 750 /var/log/astroberry
-    chown astroberry:adm /var/log/astroberry
-fi
-
 # Set qt5ct font
-if [ -e /etc/xdg/qt5ct/qt5ct.conf ]
-then
+if [ "$1" = "configure" ] && [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ -z "$(grep '0t@$' /etc/xdg/qt5ct/qt5ct.conf)" ]; then
     sed -i "s/0t@(/0t@$/g" /etc/xdg/qt5ct/qt5ct.conf
 fi
 
-# fix for RPi 4 video resolution
-if [ -n "$(grep 'dtoverlay=vc4-fkms-v3d' /boot/config.txt)" ]
-then
-    sed -i "s/^dtoverlay=vc4-fkms-v3d/#dtoverlay=vc4-fkms-v3d/g" /boot/config.txt
+# set start-here icon
+if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/16x16/places/start-here.png.bak ]; then
+    mv /usr/share/icons/PiXflat/16x16/places/start-here.png /usr/share/icons/PiXflat/16x16/places/start-here.png.bak
+    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/16x16/places/start-here.png
+fi
+if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/24x24/places/start-here.png.bak ]; then
+    mv /usr/share/icons/PiXflat/24x24/places/start-here.png /usr/share/icons/PiXflat/24x24/places/start-here.png.bak
+    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/24x24/places/start-here.png
+fi
+if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/32x32/places/start-here.png.bak ]; then
+    mv /usr/share/icons/PiXflat/32x32/places/start-here.png /usr/share/icons/PiXflat/32x32/places/start-here.png.bak
+    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/32x32/places/start-here.png
+fi
+if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/48x48/places/start-here.png.bak ]; then
+    mv /usr/share/icons/PiXflat/48x48/places/start-here.png /usr/share/icons/PiXflat/48x48/places/start-here.png.bak
+    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/48x48/places/start-here.png
 fi
 
-# Set chrony
-if [ -z "$(grep '^refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]
-then
+# generate UUID
+if [ "$1" = "configure" ] && [ -n "$(which uuid)" ]; then
+	UUID="$(uuid)"
+else
+	UUID="678963c4-adbb-11ea-99d0-734e46030771"
+fi
+
+# generate UUID for Wireless HotSpot
+if [ "$1" = "configure" ] && [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ] && [ -n "$(grep '^uuid=CHANGE_ME$' /etc/NetworkManager/system-connections/HotSpot.nmconnection)" ]; then
+	sed -i "s/^uuid=CHANGE_ME/uuid=$UUID/g" /etc/NetworkManager/system-connections/HotSpot.nmconnection
+fi
+
+# generate unique SSID for Wireless HotSpot
+if [ "$1" = "configure" ] && [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ] && [ -n "$(grep '^ssid=CHANGE_ME$' /etc/NetworkManager/system-connections/HotSpot.nmconnection)" ]; then
+	SSID="astroberry-${UUID:31}"
+        sed -i "s/^ssid=CHANGE_ME/ssid=$SSID/g" /etc/NetworkManager/system-connections/HotSpot.nmconnection
+fi
+
+# disable wpa_supplicant
+if [ "$1" = "configure" ] && [ -e /etc/wpa_supplicant/wpa_supplicant.conf ]; then
+	mv -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf.bak
+fi
+
+# fix Wireless HotSpot permissions
+if [ "$1" = "configure" ] && [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ]; then
+	chmod 600 /etc/NetworkManager/system-connections/HotSpot.nmconnection
+fi
+
+# enable network manager
+if [ "$1" = "configure" ] && [ -n "$(systemctl status NetworkManager.service | grep 'Loaded:' | grep 'disabled')" ]; then
+        systemctl enable NetworkManager.service
+fi
+
+# Set chrony to update time from GPS
+if [ "$1" = "configure" ] && [ -e /etc/chrony/chrony.conf ] && [ -z "$(grep 'refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]; then
     echo "refclock SHM 0 offset 0.5 delay 0.2 refid GPS" >> /etc/chrony/chrony.conf
-elif [ -z "$(grep '^#refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]
-then
-    sed -i "s/#refclock SHM 0 offset 0.5 delay 0.2 refid GPS/refclock SHM 0 offset 0.5 delay 0.2 refid GPS/g" /etc/chrony/chrony.conf
 fi
-

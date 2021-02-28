@@ -1,3 +1,9 @@
+astroberry-server-sysmod (2.0.5) buster; urgency=medium
+
+  * Adding proper advertising of HTTP service (by Marco Cipriani)
+
+ -- Radek Kaczorek <rkaczorek@gmail.com>  Mon, 01 Mar 2021 00:42:07 +0100
+
 astroberry-server-sysmod (2.0.4) buster; urgency=medium
 
   * Fix for post install/remove scripts

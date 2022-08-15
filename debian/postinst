@@ -3,103 +3,107 @@
 # Some tweaks come from AstroPi https://github.com/rlancaste/AstroPi3
 # For all of these credits go to Rob Lancaster
 
-# configure lxde-astroberry
-if [ "$1" = "configure" ] && [ -z "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ]; then
-    update-alternatives --install /usr/bin/x-session-manager x-session-manager /usr/bin/startlxde-astroberry 95
-fi
+if [ "$1" == "configure" ]; then
 
-# change greeter
-if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm.conf ] && [ -z "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ]; then
-    sed -i "s/^greeter-session=pi-greeter/greeter-session=lightdm-gtk-greeter/g" /etc/lightdm/lightdm.conf
-fi
+	# configure lxde-astroberry
+	if [ -z "$(update-alternatives --list x-session-manager | grep startlxde-astroberry)" ]; then
+	    update-alternatives --install /usr/bin/x-session-manager x-session-manager /usr/bin/startlxde-astroberry 95
+	fi
 
-# change background
-if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
-    sed -i "s/^\(#\|\)background=.*/background=\/var\/www\/html\/files\/background.jpg/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
+	# change greeter
+	if [ -e /etc/lightdm/lightdm.conf ] && [ -z "$(grep '^greeter-session=lightdm-gtk-greeter' /etc/lightdm/lightdm.conf)" ]; then
+	    sed -i "s/^greeter-session=pi-greeter/greeter-session=lightdm-gtk-greeter/g" /etc/lightdm/lightdm.conf
+	fi
 
-# change theme
-if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
-    sed -i "s/^\(#\|\)theme-name=.*/theme-name=Arc-Dark/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
+	# change background
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^background=\/var\/www\/html\/files\/background.jpg' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^\(#\|\)background=.*/background=\/var\/www\/html\/files\/background.jpg/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
 
-# change icons
-if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^icon-theme-name=PiXflat' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
-    sed -i "s/^\(#\|\)icon-theme-name=.*/icon-theme-name=PiXflat/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
+	# change theme
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^theme-name=Arc-Dark' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^\(#\|\)theme-name=.*/theme-name=Arc-Dark/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
 
-# change default user image
-if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
-    sed -i "s/^\(#\|\)default-user-image=.*/default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png/g" /etc/lightdm/lightdm-gtk-greeter.conf
-fi
+	# change icons
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^icon-theme-name=PiXflat' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^\(#\|\)icon-theme-name=.*/icon-theme-name=PiXflat/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
 
-# change default user image
-if [ "$1" = "configure" ] && [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
-    echo "default-user-image=/usr/share/astroberry-server-artwork/astroberry-logo-small.png" >> /etc/lightdm/lightdm-gtk-greeter.conf
-fi
+	# change default user image
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    sed -i "s/^\(#\|\)default-user-image=.*/default-user-image=\/usr\/share\/astroberry-server-artwork\/astroberry-logo-small.png/g" /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
 
-# enable qt5 menu icons
-if [ "$1" = "configure" ] && [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ -z "$(grep '^menus_have_icons=true' /etc/xdg/qt5ct/qt5ct.conf)" ]; then
-    sed -i "s/^menus_have_icons=false/menus_have_icons=true/g" /etc/xdg/qt5ct/qt5ct.conf
-fi
+	# change default user image
+	if [ -e /etc/lightdm/lightdm-gtk-greeter.conf ] && [ -z "$(grep '^default-user-image=' /etc/lightdm/lightdm-gtk-greeter.conf)" ]; then
+	    echo "default-user-image=/usr/share/astroberry-server-artwork/astroberry-logo-small.png" >> /etc/lightdm/lightdm-gtk-greeter.conf
+	fi
 
-# Set qt5ct font
-if [ "$1" = "configure" ] && [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ -z "$(grep '0t@$' /etc/xdg/qt5ct/qt5ct.conf)" ]; then
-    sed -i "s/0t@(/0t@$/g" /etc/xdg/qt5ct/qt5ct.conf
-fi
+	# enable qt5 menu icons
+	if [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ -z "$(grep '^menus_have_icons=true' /etc/xdg/qt5ct/qt5ct.conf)" ]; then
+	    sed -i "s/^menus_have_icons=false/menus_have_icons=true/g" /etc/xdg/qt5ct/qt5ct.conf
+	fi
 
-# set start-here icon
-if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/16x16/places/start-here.png.bak ]; then
-    mv /usr/share/icons/PiXflat/16x16/places/start-here.png /usr/share/icons/PiXflat/16x16/places/start-here.png.bak
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/16x16/places/start-here.png
-fi
-if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/24x24/places/start-here.png.bak ]; then
-    mv /usr/share/icons/PiXflat/24x24/places/start-here.png /usr/share/icons/PiXflat/24x24/places/start-here.png.bak
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/24x24/places/start-here.png
-fi
-if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/32x32/places/start-here.png.bak ]; then
-    mv /usr/share/icons/PiXflat/32x32/places/start-here.png /usr/share/icons/PiXflat/32x32/places/start-here.png.bak
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/32x32/places/start-here.png
-fi
-if [ "$1" = "configure" ] && [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/48x48/places/start-here.png.bak ]; then
-    mv /usr/share/icons/PiXflat/48x48/places/start-here.png /usr/share/icons/PiXflat/48x48/places/start-here.png.bak
-    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/48x48/places/start-here.png
-fi
+	# Set qt5ct font
+	if [ -e /etc/xdg/qt5ct/qt5ct.conf ] && [ -z "$(grep '0t@$' /etc/xdg/qt5ct/qt5ct.conf)" ]; then
+	    sed -i "s/0t@(/0t@$/g" /etc/xdg/qt5ct/qt5ct.conf
+	fi
 
-# generate UUID
-if [ "$1" = "configure" ] && [ -n "$(which uuid)" ]; then
-	UUID="$(uuid)"
-else
-	UUID="678963c4-adbb-11ea-99d0-734e46030771"
-fi
+	# set start-here icon
+	if [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/16x16/places/start-here.png.bak ]; then
+	    mv /usr/share/icons/PiXflat/16x16/places/start-here.png /usr/share/icons/PiXflat/16x16/places/start-here.png.bak
+	    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/16x16/places/start-here.png
+	fi
+	if [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/24x24/places/start-here.png.bak ]; then
+	    mv /usr/share/icons/PiXflat/24x24/places/start-here.png /usr/share/icons/PiXflat/24x24/places/start-here.png.bak
+	    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/24x24/places/start-here.png
+	fi
+	if [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/32x32/places/start-here.png.bak ]; then
+	    mv /usr/share/icons/PiXflat/32x32/places/start-here.png /usr/share/icons/PiXflat/32x32/places/start-here.png.bak
+	    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/32x32/places/start-here.png
+	fi
+	if [ -e /usr/share/astroberry-server-artwork/start-here.svg ] && [ ! -e /usr/share/icons/PiXflat/48x48/places/start-here.png.bak ]; then
+	    mv /usr/share/icons/PiXflat/48x48/places/start-here.png /usr/share/icons/PiXflat/48x48/places/start-here.png.bak
+	    ln -sf /usr/share/astroberry-server-artwork/start-here.svg /usr/share/icons/PiXflat/48x48/places/start-here.png
+	fi
 
-# generate UUID for Wireless HotSpot
-if [ "$1" = "configure" ] && [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ] && [ -n "$(grep '^uuid=CHANGE_ME$' /etc/NetworkManager/system-connections/HotSpot.nmconnection)" ]; then
-	sed -i "s/^uuid=CHANGE_ME/uuid=$UUID/g" /etc/NetworkManager/system-connections/HotSpot.nmconnection
-fi
+	# generate UUID
+	if [ -n "$(which uuid)" ]; then
+		UUID="$(uuid)"
+	else
+		UUID="678963c4-adbb-11ea-99d0-734e46030771"
+	fi
 
-# generate unique SSID for Wireless HotSpot
-if [ "$1" = "configure" ] && [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ] && [ -n "$(grep '^ssid=CHANGE_ME$' /etc/NetworkManager/system-connections/HotSpot.nmconnection)" ]; then
-	SSID="astroberry-${UUID:31}"
-        sed -i "s/^ssid=CHANGE_ME/ssid=$SSID/g" /etc/NetworkManager/system-connections/HotSpot.nmconnection
-fi
+	# generate UUID for Wireless HotSpot
+	if [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ] && [ -n "$(grep '^uuid=CHANGE_ME$' /etc/NetworkManager/system-connections/HotSpot.nmconnection)" ]; then
+		sed -i "s/^uuid=CHANGE_ME/uuid=$UUID/g" /etc/NetworkManager/system-connections/HotSpot.nmconnection
+	fi
 
-# disable wpa_supplicant
-if [ "$1" = "configure" ] && [ -e /etc/wpa_supplicant/wpa_supplicant.conf ]; then
-	mv -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf.bak
-fi
+	# generate unique SSID for Wireless HotSpot
+	if [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ] && [ -n "$(grep '^ssid=CHANGE_ME$' /etc/NetworkManager/system-connections/HotSpot.nmconnection)" ]; then
+		SSID="astroberry-${UUID:31}"
+	        sed -i "s/^ssid=CHANGE_ME/ssid=$SSID/g" /etc/NetworkManager/system-connections/HotSpot.nmconnection
+	fi
 
-# fix Wireless HotSpot permissions
-if [ "$1" = "configure" ] && [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ]; then
-	chmod 600 /etc/NetworkManager/system-connections/HotSpot.nmconnection
-fi
+	# disable wpa_supplicant
+	if [ -e /etc/wpa_supplicant/wpa_supplicant.conf ]; then
+		mv -f /etc/wpa_supplicant/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf.bak
+	fi
 
-# enable network manager
-if [ "$1" = "configure" ] && [ -n "$(systemctl status NetworkManager.service | grep 'Loaded:' | grep 'disabled')" ]; then
-        systemctl enable NetworkManager.service
-fi
+	# fix Wireless HotSpot permissions
+	if [ -e /etc/NetworkManager/system-connections/HotSpot.nmconnection ]; then
+		chmod 600 /etc/NetworkManager/system-connections/HotSpot.nmconnection
+	fi
 
-# Set chrony to update time from GPS
-if [ "$1" = "configure" ] && [ -e /etc/chrony/chrony.conf ] && [ -z "$(grep 'refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]; then
-    echo "refclock SHM 0 offset 0.5 delay 0.2 refid GPS" >> /etc/chrony/chrony.conf
+	# enable network manager
+	if [ -n "$(systemctl status NetworkManager.service | grep 'Loaded:' | grep 'disabled')" ]; then
+	        systemctl enable NetworkManager.service
+	fi
+
+	# Set chrony to update time from GPS
+	if [ -e /etc/chrony/chrony.conf ] && [ -z "$(grep 'refclock SHM 0 offset 0.5 delay 0.2 refid GPS' /etc/chrony/chrony.conf)" ]; then
+	    echo "refclock SHM 0 offset 0.5 delay 0.2 refid GPS" >> /etc/chrony/chrony.conf
+	fi
+
 fi

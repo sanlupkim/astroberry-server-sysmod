@@ -1,7 +1,7 @@
 #!/bin/bash
 # postrm script for astroberry-server-wui
 
-if [ "$1" = "remove" -o "$1" = "purge" ]; then
+if [ "$1" == "remove" -o "$1" == "purge" ]; then
 
 	# restore GUI autologin for pi user
 	if [ -e /etc/lightdm/lightdm.conf ] && [ -n "$(cut -d: -f1 /etc/passwd | grep '^pi$')" ] && [ -n "$(grep '^autologin-user=astroberry$' /etc/lightdm/lightdm.conf)" ]; then

@@ -1,3 +1,9 @@
+astroberry-server-sysmod (2.0.6) buster; urgency=medium
+
+  * Fixing debian scripts
+
+ -- Radek Kaczorek <rkaczorek@gmail.com>  Mon, 15 Aug 2022 13:19:18 +0000
+
 astroberry-server-sysmod (2.0.5) buster; urgency=medium
 
   * Adding proper advertising of HTTP service (by Marco Cipriani)

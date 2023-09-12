@@ -1,3 +1,10 @@
+astroberry-server-sysmod (2.0.7) bullseye; urgency=medium
+
+  * New upstreams versions
+  * local modifications
+
+ -- e2rd <sanlu@pkim.org>  Fri, 09 Jun 2023 20:48:22 +0200
+
 astroberry-server-sysmod (2.0.6) buster; urgency=medium
 
   * Fixing debian scripts
